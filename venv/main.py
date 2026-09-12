@@ -107,10 +107,11 @@ def buscar_marketplaceListado(driver, url, valor, termo):
 
 def info_melhor_preco(driver, valor, xpathPrecoGrid, xpathTitulo, xpathPrecoPage):
     i=1
-    while(str(valor) not in driver.find_element(By.XPATH, xpathPrecoGrid.format(a=i)).text):
+    while(str(valor) not in acha_preco.text): 
+        acha_preco = driver.find_element(By.XPATH, xpathPrecoGrid.format(a=i))
         i+=1
-    botao = driver.find_element(By.XPATH, xpathPrecoGrid.format(a=i))
-    botao.click()
+                
+    acha_preco.click()
     titulo = driver.find_element(By.XPATH, xpathTitulo)
     preco = driver.find_element(By.XPATH, xpathPrecoPage)
     preco = limpar_preco(preco)
