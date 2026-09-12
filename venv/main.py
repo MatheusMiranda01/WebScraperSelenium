@@ -106,15 +106,23 @@ def buscar_marketplaceListado(driver, url, valor, termo):
         return {"marketplace": nome_site, "preco": "Nenhum preço válido encontrado"}
 
 def info_melhor_preco(driver, valor, xpathPrecoGrid, xpathTitulo, xpathPrecoPage):
-    i=1
-    while(str(valor) not in acha_preco.text): 
-        acha_preco = driver.find_element(By.XPATH, xpathPrecoGrid.format(a=i))
-        i+=1
+    for i in range(1, 11, 1):
+        #wait.until(EC.presence_of_element_located((By.XPATH, xpath_preco.format(a=i))))
+        try:
+            # Pega o elemento. Modifiquei a string do XPath para envolver com () para usar indexação relativa
+            acha_preco = driver.find_element(By.XPATH, xpathPrecoGrid.format(a=i))
+            preco_texto = acha_preco.text
+            
+            if preco_texto:
+                preco_float = limpar_preco(preco_texto)
                 
-    acha_preco.click()
+            if(preco_float == valor):
+                acha_preco.click()
+        except Exception:
+            break
+    
     titulo = driver.find_element(By.XPATH, xpathTitulo)
     preco = driver.find_element(By.XPATH, xpathPrecoPage)
-    preco = limpar_preco(preco)
 
     return {
         "nome do produto" : titulo,
