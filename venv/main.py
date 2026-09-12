@@ -56,6 +56,8 @@ def buscar_marketplaceListado(driver, url, valor, termo):
     xpath_busca = valor[0]
     nome_site = valor[1]
     xpath_preco = valor[2]
+    xpath_titulo = valor[3]
+    xpath_preco_pagina = valor[4]
 
     print(f"\n--- Iniciando busca em {nome_site} ---")
     driver.get(url)
@@ -100,12 +102,12 @@ def buscar_marketplaceListado(driver, url, valor, termo):
 
     if menor_preco_valor != float('inf'):
         print(f"Menor preço encontrado em {nome_site} nos 10 primeiros itens: R$ {menor_preco_valor}")
-        tabelaProduto = dict(info_melhor_preco(driver, menor_preco_valor, xpath_preco, valor[3], valor[4]))
-        return {"marketplace": nome_site, "preco": menor_preco_texto}
+        tabelaProduto = dict(info_melhor_preco(driver, menor_preco_valor, xpath_preco, xpath_titulo, xpath_preco_pagina))
+        return {"nome_produto" : tabelaProduto["nome do produto"], "link" : tabelaProduto["link"],"marketplace": nome_site, "preco": menor_preco_texto}
     else:
         return {"marketplace": nome_site, "preco": "Nenhum preço válido encontrado"}
 
-def info_melhor_preco(driver, valor, xpathPrecoGrid, xpathTitulo, xpathPrecoPage):
+def info_melhor_preco(driver : webdriver, valor : float, xpathPrecoGrid:str, xpathTitulo:str, xpathPrecoPage:str):
     for i in range(1, 11, 1):
         #wait.until(EC.presence_of_element_located((By.XPATH, xpath_preco.format(a=i))))
         try:
@@ -121,8 +123,8 @@ def info_melhor_preco(driver, valor, xpathPrecoGrid, xpathTitulo, xpathPrecoPage
         except Exception:
             break
     
-    titulo = driver.find_element(By.XPATH, xpathTitulo)
-    preco = driver.find_element(By.XPATH, xpathPrecoPage)
+    titulo = driver.find_element(By.XPATH, xpathTitulo).text
+    preco = driver.find_element(By.XPATH, xpathPrecoPage).text
 
     return {
         "nome do produto" : titulo,
@@ -132,10 +134,18 @@ def info_melhor_preco(driver, valor, xpathPrecoGrid, xpathTitulo, xpathPrecoPage
     #clica em cima da div do produto
     #retorna o nome, o link, e o preco
 
+def tabela_preco(dados : dict):
+    print("*"*50)
+    print(f"{"LOJA:":<50}")
+    print(f"{"LINK:":^50}")
+    print(f"{"PRECO:":>50}")
+    print("*"*50)
+    for item in dados.items:
+        print(f"{(dados["marketplace"]):<50} {(dados["link"]):^50} {(dados["preco"]):>50}")
 # Execução do Código Principal
 if termo_busca:
     for link, dados in urlMarketPlace.items():
         resultado = buscar_marketplaceListado(driver, link, dados, termo_busca)
-        print(f"-> Melhor resultado no {resultado['marketplace']}: {resultado['preco']}")
+        tabela_preco(resultado)
 
 driver.quit()
