@@ -19,23 +19,28 @@ urlMarketPlace = {
     "https://www.kabum.com.br": [
         "//input[@id='inputBusca']", # XPath relativo muito mais seguro
         "KaBuM", 
-        "(//span[contains(@class, 'text-base font-semibold text-gray-800')])[{a}]"
+        "(//span[contains(@class, 'text-base font-semibold text-gray-800')])[{a}]",
+        "(//h1[contains(@class, 'text-sm font-semibold text-gray-800 desktop:text-base desktopLarge:text-xl')])",
+        "(//span[contains(@class, 'text-2xl leading-tight')])"
     ],
     "https://www.amazon.com.br": [
         "//input[@id='twotabsearchtextbox']", 
         "Amazon", 
-        "(//span[@id='37909a1a-d123-4400-a282-f7203f9d590a'])[{a}]"
+        "(//span[contains(@class, 'a-price-whole')])[{a}]",
+        "(//span[contains(@id, 'productTitle')])",
+        "(//span[contains(@class, 'a-price-whole')])"
     ],
     "https://www.efacil.com.br": [
-        "//input[@class='MuiInputBase-input MuiInputBase-inputAdornedEnd']", 
+        "(//input[@class='MuiInputBase-input MuiInputBase-inputAdornedEnd'])", 
         "eFácil", 
-        "(//span[@class='a-price-whole'])[{a}]"
+        "(//span[contains(@class, 'MuiTypography-root sc-5ee6e43b-0 dfUWFb sc-866b0dcf-1 hNQjWV')])[{a}]",
+        "(//h1[contains(@class, 'MuiTypography-root sc-5ee6e43b-0 bGVoZF sc-58f9322b-0 heTwnA MuiTypography-h1')])",
+        "(//span[contains(@class, 'MuiTypography-root sc-5ee6e43b-0 jMzKCH sc-caaf7b2-5 eQtJgk')])"
     ]
 }
 
 # Separação correta de variáveis
 tem_url = input("Voce possui a URL do item? (S/N): ").strip().upper()
-
 if tem_url == "S":
     linkProd = input("Digite a URL do item: ")
     loja = input("Digite o nome da loja: ")
@@ -65,7 +70,7 @@ def buscar_marketplaceListado(driver, url, valor, termo):
         busca.send_keys(Keys.RETURN)
         
         # Espera a página de resultados carregar (esperando pelo primeiro preço aparecer)
-        wait.until(EC.presence_of_element_located((By.XPATH, xpath_preco.format(a=1))))
+        
     except Exception as e:
         print(f"Erro ao buscar no site {nome_site} ou campo de busca não encontrado.")
         return {"marketplace": nome_site, "preco": "Erro na busca"}
@@ -74,12 +79,12 @@ def buscar_marketplaceListado(driver, url, valor, termo):
     menor_preco_texto = ""
 
     # Busca os 10 primeiros itens
-    for i in range(1, 21):
+    for i in range(1, 11, 1):
+        #wait.until(EC.presence_of_element_located((By.XPATH, xpath_preco.format(a=i))))
         try:
             # Pega o elemento. Modifiquei a string do XPath para envolver com () para usar indexação relativa
             elemento_preco = driver.find_element(By.XPATH, xpath_preco.format(a=i))
             preco_texto = elemento_preco.text
-
             
             if preco_texto:
                 preco_float = limpar_preco(preco_texto)
@@ -95,9 +100,28 @@ def buscar_marketplaceListado(driver, url, valor, termo):
 
     if menor_preco_valor != float('inf'):
         print(f"Menor preço encontrado em {nome_site} nos 10 primeiros itens: R$ {menor_preco_valor}")
+        tabelaProduto = dict(info_melhor_preco(driver, menor_preco_valor, xpath_preco, valor[3], valor[4]))
         return {"marketplace": nome_site, "preco": menor_preco_texto}
     else:
         return {"marketplace": nome_site, "preco": "Nenhum preço válido encontrado"}
+
+def info_melhor_preco(driver, valor, xpathPrecoGrid, xpathTitulo, xpathPrecoPage):
+    i=1
+    while(str(valor) not in driver.find_element(By.XPATH, xpathPrecoGrid.format(a=i)).text):
+        i+=1
+    botao = driver.find_element(By.XPATH, xpathPrecoGrid.format(a=i))
+    botao.click()
+    titulo = driver.find_element(By.XPATH, xpathTitulo)
+    preco = driver.find_element(By.XPATH, xpathPrecoPage)
+    preco = limpar_preco(preco)
+
+    return {
+        "nome do produto" : titulo,
+        "link" : driver.current_url,
+        "preço" : preco
+    }
+    #clica em cima da div do produto
+    #retorna o nome, o link, e o preco
 
 # Execução do Código Principal
 if termo_busca:
