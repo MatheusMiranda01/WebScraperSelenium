@@ -16,13 +16,13 @@ def limpar_preco(texto_preco):
         return float('inf') # Se não for possível converter (ex: "Esgotado"), retorna infinito
 
 urlMarketPlace = {
-    "https://www.kabum.com.br": [
-        "//input[@id='inputBusca']", # XPath relativo muito mais seguro
-        "KaBuM", 
-        "(//span[contains(@class, 'text-base font-semibold text-gray-800')])[{a}]",
-        "(//h1[contains(@class, 'text-sm font-semibold text-gray-800 desktop:text-base desktopLarge:text-xl')])",
-        "(//span[contains(@class, 'text-2xl leading-tight')])"
-    ],
+    #"https://www.kabum.com.br": [
+    #     "//input[@id='inputBusca']", # XPath relativo muito mais seguro
+    #     "KaBuM", 
+    #     "(//span[contains(@class, 'text-base font-semibold text-gray-800')])[{a}]",
+    #     "(//h1[contains(@class, 'text-sm font-semibold text-gray-800 desktop:text-base desktopLarge:text-xl')])",
+    #     "(//span[contains(@class, 'text-2xl leading-tight')])"
+    # ],
     "https://www.amazon.com.br": [
         "//input[@id='twotabsearchtextbox']", 
         "Amazon", 
@@ -102,12 +102,12 @@ def buscar_marketplaceListado(driver, url, valor, termo):
 
     if menor_preco_valor != float('inf'):
         print(f"Menor preço encontrado em {nome_site} nos 10 primeiros itens: R$ {menor_preco_valor}")
-        tabelaProduto = dict(info_melhor_preco(driver, menor_preco_valor, xpath_preco, xpath_titulo, xpath_preco_pagina))
+        tabelaProduto = dict(info_melhor_preco(driver, menor_preco_valor, xpath_preco, xpath_titulo))
         return {"nome_produto" : tabelaProduto["nome do produto"], "link" : tabelaProduto["link"],"marketplace": nome_site, "preco": menor_preco_texto}
     else:
         return {"marketplace": nome_site, "preco": "Nenhum preço válido encontrado"}
 
-def info_melhor_preco(driver : webdriver, valor : float, xpathPrecoGrid:str, xpathTitulo:str, xpathPrecoPage:str):
+def info_melhor_preco(driver : webdriver, valor : float, xpathPrecoGrid:str, xpathTitulo:str):
     for i in range(1, 11, 1):
         #wait.until(EC.presence_of_element_located((By.XPATH, xpath_preco.format(a=i))))
         try:
@@ -120,28 +120,26 @@ def info_melhor_preco(driver : webdriver, valor : float, xpathPrecoGrid:str, xpa
                 
             if(preco_float == valor):
                 acha_preco.click()
+                break
         except Exception:
             break
     
     titulo = driver.find_element(By.XPATH, xpathTitulo).text
-    preco = driver.find_element(By.XPATH, xpathPrecoPage).text
 
     return {
-        "nome do produto" : titulo,
-        "link" : driver.current_url,
-        "preço" : preco
+        "nome do produto" : str(titulo),
+        "link" : str(driver.current_url),
+        "preço" : str(preco_float)
     }
     #clica em cima da div do produto
     #retorna o nome, o link, e o preco
 
 def tabela_preco(dados : dict):
-    print("*"*50)
-    print(f"{"LOJA:":<50}")
-    print(f"{"LINK:":^50}")
-    print(f"{"PRECO:":>50}")
-    print("*"*50)
-    for item in dados.items:
-        print(f"{(dados["marketplace"]):<50} {(dados["link"]):^50} {(dados["preco"]):>50}")
+    print("*"*45)
+    print(f"{"LOJA:":<15} {"LINK:":^15} {"PRECO:":>15}")
+    print("*"*45)
+    for item in dados:
+        print(f"{(dados["marketplace"]):<15} {(dados["link"]):^15} {(dados["preco"]):>15}")
 # Execução do Código Principal
 if termo_busca:
     for link, dados in urlMarketPlace.items():
