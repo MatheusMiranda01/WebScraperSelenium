@@ -16,20 +16,20 @@ def limpar_preco(texto_preco):
         return float('inf') # Se não for possível converter (ex: "Esgotado"), retorna infinito
 
 urlMarketPlace = {
-    #"https://www.kabum.com.br": [
+    # "https://www.kabum.com.br": [
     #     "//input[@id='inputBusca']", # XPath relativo muito mais seguro
     #     "KaBuM", 
     #     "(//span[contains(@class, 'text-base font-semibold text-gray-800')])[{a}]",
     #     "(//h1[contains(@class, 'text-sm font-semibold text-gray-800 desktop:text-base desktopLarge:text-xl')])",
     #     "(//span[contains(@class, 'text-2xl leading-tight')])"
     # ],
-    "https://www.amazon.com.br": [
-        "//input[@id='twotabsearchtextbox']", 
-        "Amazon", 
-        "(//span[contains(@class, 'a-price-whole')])[{a}]",
-        "(//span[contains(@id, 'productTitle')])",
-        "(//span[contains(@class, 'a-price-whole')])"
-    ],
+    # "https://www.amazon.com.br": [
+    #     "//input[@id='twotabsearchtextbox']", 
+    #     "Amazon", 
+    #     "(//span[contains(@class, 'a-price-whole')])[{a}]",
+    #     "(//span[contains(@id, 'productTitle')])",
+    #     "(//span[contains(@class, 'a-price-whole')])"
+    # ],
     "https://www.efacil.com.br": [
         "(//input[@class='MuiInputBase-input MuiInputBase-inputAdornedEnd'])", 
         "eFácil", 
@@ -57,7 +57,6 @@ def buscar_marketplaceListado(driver, url, valor, termo):
     nome_site = valor[1]
     xpath_preco = valor[2]
     xpath_titulo = valor[3]
-    xpath_preco_pagina = valor[4]
 
     print(f"\n--- Iniciando busca em {nome_site} ---")
     driver.get(url)
@@ -78,15 +77,17 @@ def buscar_marketplaceListado(driver, url, valor, termo):
         return {"marketplace": nome_site, "preco": "Erro na busca"}
 
     menor_preco_valor = float('inf')
-    menor_preco_texto = ""
 
     # Busca os 10 primeiros itens
     for i in range(1, 11, 1):
-        #wait.until(EC.presence_of_element_located((By.XPATH, xpath_preco.format(a=i))))
         try:
             # Pega o elemento. Modifiquei a string do XPath para envolver com () para usar indexação relativa
-            elemento_preco = driver.find_element(By.XPATH, xpath_preco.format(a=i))
-            preco_texto = elemento_preco.text
+            while True:
+                elemento_preco = driver.find_element(By.XPATH, xpath_preco.format(a=i))
+                preco_texto = elemento_preco.text
+                if(preco_texto):
+                    break
+            
             
             if preco_texto:
                 preco_float = limpar_preco(preco_texto)
@@ -94,7 +95,6 @@ def buscar_marketplaceListado(driver, url, valor, termo):
                 # Atualiza se encontrou um preço menor válido
                 if preco_float < menor_preco_valor:
                     menor_preco_valor = preco_float
-                    menor_preco_texto = preco_texto
 
         except Exception:
             # Se não encontrar o item (ex: só tinham 5 produtos na tela), interrompe o laço
@@ -102,14 +102,14 @@ def buscar_marketplaceListado(driver, url, valor, termo):
 
     if menor_preco_valor != float('inf'):
         print(f"Menor preço encontrado em {nome_site} nos 10 primeiros itens: R$ {menor_preco_valor}")
-        tabelaProduto = dict(info_melhor_preco(driver, menor_preco_valor, xpath_preco, xpath_titulo))
-        return {"nome_produto" : tabelaProduto["nome do produto"], "link" : tabelaProduto["link"],"marketplace": nome_site, "preco": menor_preco_texto}
+        tabelaProduto = info_melhor_preco(driver, menor_preco_valor, xpath_preco, xpath_titulo)
+        return {"nome_produto" : tabelaProduto["nome do produto"], "url" : tabelaProduto["link"],"marketplace": nome_site, "preco": menor_preco_valor}
     else:
         return {"marketplace": nome_site, "preco": "Nenhum preço válido encontrado"}
 
 def info_melhor_preco(driver : webdriver, valor : float, xpathPrecoGrid:str, xpathTitulo:str):
     for i in range(1, 11, 1):
-        #wait.until(EC.presence_of_element_located((By.XPATH, xpath_preco.format(a=i))))
+        wait.until(EC.presence_of_element_located((By.XPATH, xpathPrecoGrid.format(a=i))))
         try:
             # Pega o elemento. Modifiquei a string do XPath para envolver com () para usar indexação relativa
             acha_preco = driver.find_element(By.XPATH, xpathPrecoGrid.format(a=i))
@@ -136,10 +136,12 @@ def info_melhor_preco(driver : webdriver, valor : float, xpathPrecoGrid:str, xpa
 
 def tabela_preco(dados : dict):
     print("*"*45)
-    print(f"{"LOJA:":<15} {"LINK:":^15} {"PRECO:":>15}")
+    print(f"{"LOJA:":<15} {"NOME:":^15} {"PRECO:":>15}")
     print("*"*45)
-    for item in dados:
-        print(f"{(dados["marketplace"]):<15} {(dados["link"]):^15} {(dados["preco"]):>15}")
+    if "url" in dados.keys():
+        print(f"{(dados["marketplace"]):<15} {(dados["url"]):^15} {(dados["preco"]):>15}")
+    else:
+        print("Não foi possível identificar a pagina do seu produto.")
 # Execução do Código Principal
 if termo_busca:
     for link, dados in urlMarketPlace.items():
